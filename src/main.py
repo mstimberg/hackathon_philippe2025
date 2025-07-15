@@ -21,30 +21,35 @@ def get_google_calendar_service():
             pickle.dump(creds, token)
     return build('calendar', 'v3', credentials=creds)
 
-def unix_to_rfc3339(timestamp):
-    dt = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+def dotnet_ticks_to_rfc3339(ticks):
+    # .NET ticks are 100-nanosecond intervals since January 1, 0001 UTC
+    # Unix epoch is January 1, 1970 UTC
+    # There are 621355968000000000 ticks between 0001 and 1970
+    unix_timestamp = (int(ticks) - 621355968000000000) / 10000000
+    dt = datetime.fromtimestamp(unix_timestamp, tz=timezone.utc)
     return dt.isoformat()
 
 def parse_local_xml(path):
     tree = etree.parse(path)
+    root = tree.getroot()
     appointments = []
-    for appointment in tree.findall('Appointment'):
+    for appointment in root.findall('Appointment'):
         id = appointment.find('ID').text
-        start = int(appointment.find('Start').text) // 10000000  # Convert nanoseconds to seconds
-        end = int(appointment.find('End').text) // 10000000  # Convert nanoseconds to seconds
+        start_ticks = appointment.find('Start').text
+        end_ticks = appointment.find('End').text
         description = appointment.find('Description').text
         reminder = appointment.find('Reminder').text == 'True'
         appointments.append({
             'id': id,
-            'start': start,
-            'end': end,
+            'start': dotnet_ticks_to_rfc3339(start_ticks),
+            'end': dotnet_ticks_to_rfc3339(end_ticks),
             'description': description,
             'reminder': reminder
         })
     return appointments
 
 def get_google_events(service):
-    now = datetime.utcnow().isoformat() + 'Z'
+    now = datetime.now(timezone.utc).isoformat()
     events_result = service.events().list(
         calendarId=CALENDAR_ID,
         timeMin=now,
@@ -55,7 +60,7 @@ def get_google_events(service):
     return events_result.get('items', [])
 
 def sync_xml_to_google(service, local_events, google_events):
-    google_event_titles = {e['summary']: e for e in google_events}
+    google_event_titles = {e.get('summary', ''): e for e in google_events}
     print(local_events)
     for local_event in local_events:
         title = local_event['description']
