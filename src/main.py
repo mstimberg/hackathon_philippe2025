@@ -1,6 +1,6 @@
 import os
 import pickle
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from lxml import etree
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -8,6 +8,9 @@ from googleapiclient.discovery import build
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 CALENDAR_ID = 'primary'
 LOCAL_XML_PATH = 'Appointments.xml'
+LOCAL_XML_PATH_COMMUNICATOR = r'C:\Users\phili\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe prédiction\Settings\Calendar'
+FETCH_DAYS_FUTURE = 30
+FETCH_DAYS_PAST = 7
 
 def get_google_calendar_service():
     creds = None
@@ -62,20 +65,75 @@ def parse_local_xml(path):
         })
     return appointments
 
-def get_google_events(service):
-    now = datetime.now(timezone.utc).isoformat()
-    events_result = service.events().list(
-        calendarId=CALENDAR_ID,
-        timeMin=now,
-        maxResults=250,
-        singleEvents=True,
-        orderBy='startTime'
-    ).execute()
+def get_google_events(service, time_min=None, time_max=None):
+    """
+    Get Google Calendar events within a specified time range.
+    
+    Args:
+        service: Google Calendar service object
+        time_min: Minimum time for events (RFC3339 string), defaults to now
+        time_max: Maximum time for events (RFC3339 string), optional
+    """
+    if time_min is None:
+        time_min = datetime.now(timezone.utc).isoformat()
+    
+    params = {
+        'calendarId': CALENDAR_ID,
+        'timeMin': time_min,
+        'maxResults': 250,
+        'singleEvents': True,
+        'orderBy': 'startTime'
+    }
+    
+    if time_max:
+        params['timeMax'] = time_max
+    
+    events_result = service.events().list(**params).execute()
     return events_result.get('items', [])
 
+def get_events_past_week_to_next_month(service):
+    """
+    Get events from one week ago to one month from now.
+    """
+    now = datetime.now(timezone.utc)
+    
+    # One week ago
+    time_min = (now - timedelta(days=FETCH_DAYS_PAST)).isoformat()
+    
+    # One month from now (approximately 30 days)
+    time_max = (now + timedelta(days=FETCH_DAYS_FUTURE)).isoformat()
+    
+    print(f"📅 Fetching events from {time_min[:10]} to {time_max[:10]}")
+    
+    return get_google_events(service, time_min=time_min, time_max=time_max)
+
 def sync_xml_to_google(service, local_events, google_events):
+    # Filter local events to the same time range (past week to next month)
+    now = datetime.now(timezone.utc)
+    time_min = now - timedelta(days=FETCH_DAYS_PAST)
+    time_max = now + timedelta(days=FETCH_DAYS_FUTURE)
+    
+    filtered_local_events = []
+    for event in local_events:
+        try:
+            # Parse the event start time
+            event_start = datetime.fromisoformat(event['start'].replace('Z', '+00:00'))
+            if event_start.tzinfo is None:
+                event_start = event_start.replace(tzinfo=timezone.utc)
+            else:
+                event_start = event_start.astimezone(timezone.utc)
+            
+            # Check if the event falls within our time range
+            if time_min <= event_start <= time_max:
+                filtered_local_events.append(event)
+        except Exception as e:
+            print(f"⚠️ Error parsing date for event '{event.get('description', 'Unknown')}': {e}")
+            continue
+    
+    print(f"🔍 Filtered {len(filtered_local_events)} XML events (out of {len(local_events)}) within time range")
+    
     google_event_titles = {e.get('summary', ''): e for e in google_events}
-    for local_event in local_events:
+    for local_event in filtered_local_events:
         title = local_event['description']
         if title not in google_event_titles:
             event_body = {
@@ -188,11 +246,68 @@ def write_appointments_to_xml(appointments, xml_path):
     tree = etree.ElementTree(root)
     tree.write(xml_path, encoding='utf-8', xml_declaration=True, pretty_print=True)
 
+def filter_and_display_events():
+    """
+    Filter and display events from past week to next month.
+    """
+    print("🔍 Filtering events from past week to next month...")
+    service = get_google_calendar_service()
+    filtered_events = get_events_past_week_to_next_month(service)
+    
+    if not filtered_events:
+        print("📭 No events found in the specified time range.")
+        return
+    
+    print(f"\n📅 Found {len(filtered_events)} events:")
+    print("-" * 80)
+    
+    for event in filtered_events:
+        summary = event.get('summary', 'No title')
+        start_time = event.get('start', {})
+        end_time = event.get('end', {})
+        
+        # Handle both dateTime and date fields
+        start_datetime = start_time.get('dateTime') or start_time.get('date')
+        end_datetime = end_time.get('dateTime') or end_time.get('date')
+        
+        # Format the datetime for display
+        if start_datetime:
+            try:
+                if 'T' in start_datetime:  # Full datetime
+                    start_dt = datetime.fromisoformat(start_datetime.replace('Z', '+00:00'))
+                    formatted_start = start_dt.strftime('%Y-%m-%d %H:%M')
+                else:  # Date only
+                    formatted_start = start_datetime
+            except:
+                formatted_start = start_datetime
+        else:
+            formatted_start = "Unknown time"
+        
+        print(f"🗓️  {summary}")
+        print(f"   📅 {formatted_start}")
+        
+        # Add description if available
+        description = event.get('description', '')
+        if description and len(description) < 100:
+            print(f"   📝 {description}")
+        
+        print()
+
 def main():
+    sync_calendar()
+    filter_and_display_events()
+
+
+def sync_calendar():
+    """
+    Perform the calendar synchronization between XML and Google Calendar.
+    """
     print("🚀 Starting calendar sync...")
     service = get_google_calendar_service()
     local_events = parse_local_xml(LOCAL_XML_PATH)
-    google_events = get_google_events(service)
+    
+    # Use the same time filter for sync as for display
+    google_events = get_events_past_week_to_next_month(service)
     
     print("\n📤 Syncing from XML to Google Calendar...")
     sync_xml_to_google(service, local_events, google_events)
