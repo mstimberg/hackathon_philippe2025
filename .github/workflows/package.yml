@@ -9,6 +9,12 @@ jobs:
         os: [windows-latest, macOS-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: create-json
+        id: create-json
+        uses: jsdaniell/create-json@1.1.2
+        with:
+          name: "secrets/credentials.json"
+          json: ${{ secrets.CREDENTIALS_JSON }}
       - name: Create single file executable for ${{ matrix.os }}
         uses: sayyid5416/pyinstaller@v1
         with:
@@ -16,3 +22,4 @@ jobs:
           spec: 'main.spec'
           requirements: 'requirements.txt'
           upload_exe_with_name: 'Philippe_CalSync${{ matrix.os }}.exe'
+      

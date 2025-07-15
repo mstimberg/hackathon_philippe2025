@@ -18,7 +18,7 @@ def get_google_calendar_service():
         with open('token.pkl', 'rb') as token:
             creds = pickle.load(token)
     if not creds:
-        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file(os.path.join(os.path.dirname(__file__), 'secrets', 'credentials.json'), SCOPES)
         creds = flow.run_local_server(port=0)
         with open('token.pkl', 'wb') as token:
             pickle.dump(creds, token)
