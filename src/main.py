@@ -56,12 +56,12 @@ def get_google_events(service):
 
 def sync_xml_to_google(service, local_events, google_events):
     google_event_titles = {e['summary']: e for e in google_events}
-
+    print(local_events)
     for local_event in local_events:
-        title = local_event['title']
+        title = local_event['description']
         if title not in google_event_titles:
             event_body = {
-                'summary': local_event['title'],
+                'summary': local_event['description'],
                 'start': {
                     'dateTime': local_event['start'],
                     'timeZone': 'Europe/Paris',
