@@ -6,4 +6,4 @@ python-docx
 appdirs
 lxml
 google_auth_oauthlib
-googleapiclient
+google-api-python-client
