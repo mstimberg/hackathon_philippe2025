@@ -10,9 +10,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: create secrets directory
-        run: |
-          mkdir src
-          mkdir secrets
+        shell: bash
+        run: mkdir -p src/secrets
       - name: create-json
         id: create-json
         uses: jsdaniell/create-json@1.1.2
