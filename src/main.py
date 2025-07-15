@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 CALENDAR_ID = 'primary'
-LOCAL_XML_PATH = 'calendar.xml'
+LOCAL_XML_PATH = 'Appointments.xml'
 
 def get_google_calendar_service():
     creds = None
@@ -27,16 +27,21 @@ def unix_to_rfc3339(timestamp):
 
 def parse_local_xml(path):
     tree = etree.parse(path)
-    events = []
-    for event in tree.xpath('//event'):
-        events.append({
-            'id': event.findtext('id'),
-            'title': event.findtext('title'),
-            'start': unix_to_rfc3339(event.findtext('start')),
-            'end': unix_to_rfc3339(event.findtext('end')),
-            'last_modified': int(event.findtext('last_modified')),
+    appointments = []
+    for appointment in tree.findall('Appointment'):
+        id = appointment.find('ID').text
+        start = int(appointment.find('Start').text) // 10000000  # Convert nanoseconds to seconds
+        end = int(appointment.find('End').text) // 10000000  # Convert nanoseconds to seconds
+        description = appointment.find('Description').text
+        reminder = appointment.find('Reminder').text == 'True'
+        appointments.append({
+            'id': id,
+            'start': start,
+            'end': end,
+            'description': description,
+            'reminder': reminder
         })
-    return events
+    return appointments
 
 def get_google_events(service):
     now = datetime.utcnow().isoformat() + 'Z'
