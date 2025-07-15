@@ -6,7 +6,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[("src/icons", "icons"),
-           ("secrets", "secrets")],
+           ("src/secrets", "secrets")],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

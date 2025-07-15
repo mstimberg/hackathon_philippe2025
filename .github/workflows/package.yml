@@ -10,12 +10,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: create secrets directory
-        run: mkdir secrets
+        run: mkdir src/secrets
       - name: create-json
         id: create-json
         uses: jsdaniell/create-json@1.1.2
         with:
-          name: "secrets/credentials.json"
+          name: "src/secrets/credentials.json"
           json: ${{ secrets.CREDENTIALS_JSON }}
       - name: Create single file executable for ${{ matrix.os }}
         uses: sayyid5416/pyinstaller@v1
