@@ -9,6 +9,8 @@ jobs:
         os: [ ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
       - name: create secrets directory
         shell: bash
         run: mkdir -p src/secrets
