@@ -18,6 +18,9 @@ jobs:
         with:
           name: "src/secrets/credentials.json"
           json: ${{ secrets.CREDENTIALS_JSON }}
+      - name: Debug
+        shell: bash
+        run: tree
       - name: Create single file executable for ${{ matrix.os }}
         uses: sayyid5416/pyinstaller@v1.8.0
         with:
