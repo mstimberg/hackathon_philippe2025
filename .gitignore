@@ -206,3 +206,4 @@ marimo/_lsp/
 __marimo__/
 
 credentials.json
+token.pkl
