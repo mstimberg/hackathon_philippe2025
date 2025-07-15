@@ -4,3 +4,6 @@ PyQt5-sip
 whoosh
 python-docx
 appdirs
+lxml
+google_auth_oauthlib
+googleapiclient
