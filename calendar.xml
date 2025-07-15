@@ -1,0 +1,9 @@
+<calendar>
+  <event>
+    <id>123</id>
+    <title>Réunion produit</title>
+    <start>1752572400</start>  <!-- Unix timestamp -->
+    <end>1752576000</end>
+    <last_modified>1752403200</last_modified>
+  </event>
+</calendar>
