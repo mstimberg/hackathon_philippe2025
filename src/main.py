@@ -6,6 +6,20 @@ from xml_handler import parse_local_xml, write_appointments_to_xml
 from time_utils import rfc3339_to_dotnet_ticks
 from snapshot_manager import save_snapshots, load_snapshots, reset_snapshots
 from event_manager import detect_changes, delete_google_events, delete_xml_events
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtCore import Qt, QRunnable
+from PyQt5 import QtCore
+import sys
+from PyQt5.QtWidgets import QTextEdit
+from contextlib import redirect_stdout
+from PyQt5.QtCore import QObject, pyqtSignal, QThreadPool
+
+STYLE = """
+QWidget {
+   font-size: 30px;
+   font-family: "Noto Sans", Arial, Helvetica, sans-serif;
+}
+"""
 
 # Configuration
 LOCAL_XML_PATH = 'Appointments.xml'
@@ -273,5 +287,71 @@ def filter_and_display_events():
 def main():
     sync_calendar_with_diff()
 
+
+class SyncLogDialog(QDialog):
+    """Dialog to display sync logs with a close button."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setWindowTitle("Synchronisation Agenda")
+        self.setMinimumSize(800, 600)
+        
+        # Create layout
+        layout = QVBoxLayout(self)
+        
+        # Create rich text area
+        self.text_area = QTextEdit()
+        self.text_area.setReadOnly(True)
+        layout.addWidget(self.text_area)
+        
+        # Create close button (initially disabled)
+        self.close_button = QPushButton("Fermer")
+        self.close_button.clicked.connect(self.accept)
+        self.close_button.setEnabled(False)
+        self.close_button.setMinimumHeight(40)
+        layout.addWidget(self.close_button)
+    
+    @QtCore.pyqtSlot(str)
+    def append_text(self, text=None):
+        """Append text to the text area."""
+        self.text_area.append(text)
+        # Auto-scroll to bottom
+        cursor = self.text_area.textCursor()
+        cursor.movePosition(cursor.End)
+        self.text_area.setTextCursor(cursor)
+    
+    @QtCore.pyqtSlot()
+    def sync_finished(self):
+        """Signal that sync is finished, enable close button."""
+        self.close_button.setEnabled(True)
+        self.append_text("<br><b>✅ Sync complete. You can now close this window.</b>")
+
+
+class Signals(QObject):
+    log_text = pyqtSignal(str)
+
 if __name__ == '__main__':
-    main()
+    
+    app = QApplication(sys.argv)
+    app.setStyleSheet(STYLE)
+    dialog = SyncLogDialog()
+    dialog.show()
+    class SyncRunner(QRunnable):
+        
+        def __init__(self, dialog):
+            super().__init__()
+            self.dialog = dialog
+            self.signals = Signals()
+            self.signals.log_text.connect(dialog.append_text)
+        
+        def run(self):
+            # Ugly quick fix to get print statements into dialog
+            globals()["print"] = self.signals.log_text.emit 
+            main()
+            self.dialog.sync_finished()
+    
+    # Run main in background thread
+    pool = QThreadPool.globalInstance()
+    pool.start(SyncRunner(dialog))
+    
+    sys.exit(app.exec_())
