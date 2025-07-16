@@ -22,7 +22,7 @@ QWidget {
 # Configuration
 LOCAL_XML_PATH = 'Appointments.xml'
 XML_PATHS_COMMUNICATOR = [r'C:\Users\phili\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe prédiction\Settings\Calendar\Appointments.xml',
-                          r'C:\Users\Philippe\Documents\Communicator 5\Philippe\Users\My Text Files\Settings\Calendar\Appointments.xml']
+                          r'C:\Users\Philippe\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe\Settings\Calendar\Appointments.xml']
 FETCH_DAYS_FUTURE = 30
 FETCH_DAYS_PAST = 7
 
