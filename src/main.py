@@ -1,17 +1,15 @@
-import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from auth import get_google_calendar_service, get_events_past_week_to_next_month, CALENDAR_ID
 from time_utils import filter_events_by_time_range
 from xml_handler import parse_local_xml, write_appointments_to_xml
 from time_utils import rfc3339_to_dotnet_ticks
-from snapshot_manager import save_snapshots, load_snapshots, reset_snapshots
+from snapshot_manager import save_snapshots, load_snapshots
 from event_manager import detect_changes, delete_google_events, delete_xml_events
-from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt, QRunnable
 from PyQt5 import QtCore
 import sys
 from PyQt5.QtWidgets import QTextEdit
-from contextlib import redirect_stdout
 from PyQt5.QtCore import QObject, pyqtSignal, QThreadPool
 
 STYLE = """
@@ -37,9 +35,7 @@ def sync_xml_to_google(service, local_events, google_events):
     filtered_local_events = filter_events_by_time_range(
         local_events, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE
     )
-    
-    print(f"🔍 Filtered {len(filtered_local_events)} XML events (out of {len(local_events)}) within time range")
-    
+        
     google_event_titles = {e.get('summary', ''): e for e in google_events}
     for local_event in filtered_local_events:
         title = local_event['description']
@@ -57,9 +53,9 @@ def sync_xml_to_google(service, local_events, google_events):
                 'description': f"Synced from local XML - ID {local_event['id']}"
             }
             created = service.events().insert(calendarId=CALENDAR_ID, body=event_body).execute()
-            print(f"✅ Event created: {created['summary']} at {created['start']['dateTime']}")
+            print(f"✅ Evénement créé: {created['summary']} à {created['start']['dateTime']}")
         else:
-            print(f"🔁 Event already exists: {title}")
+            print(f"🔁 Evénement déjà existant: {title}")
 
 def sync_google_to_xml(google_events, local_events, xml_path):
     """Sync Google Calendar events to XML (additions only)."""
@@ -82,7 +78,7 @@ def sync_google_to_xml(google_events, local_events, xml_path):
             
         # Skip if this event already exists in local XML
         if summary in local_descriptions:
-            print(f"🔁 Event already exists in XML: {summary}")
+            print(f"🔁 Evénement déjà existant dans le calendrier local : {summary}")
             continue
         
         # Extract start and end times
@@ -94,7 +90,7 @@ def sync_google_to_xml(google_events, local_events, xml_path):
         end_datetime = end_time.get('dateTime') or end_time.get('date')
         
         if not start_datetime or not end_datetime:
-            print(f"⚠️ Skipping event with missing date/time: {summary}")
+            print(f"⚠️ Événement sans date/heure: {summary}")
             continue
         
         # Convert to .NET ticks
@@ -109,15 +105,15 @@ def sync_google_to_xml(google_events, local_events, xml_path):
             'reminder': False  # Default to False for Google events
         })
         
-        print(f"📅 New appointment from Google: {summary}")
+        print(f"📅 Nouveau rendez-vous depuis Google: {summary}")
         next_id += 1
     
     if new_appointments:
         # Update the XML file
         write_appointments_to_xml(local_events + new_appointments, xml_path)
-        print(f"✅ Added {len(new_appointments)} new appointments to XML")
+        print(f"✅ Ajouté {len(new_appointments)} nouveaux rendez-vous au calendrier local ")
     else:
-        print("ℹ️ No new appointments to add to XML")
+        print("ℹ️ Aucun nouveau rendez-vous à ajouter au calendrier local ")
 
 # ============================================================================
 # SYNC LOGIC - DIFF-BASED SYNC (ADDITIONS AND DELETIONS)
@@ -143,13 +139,9 @@ def sync_calendar_with_diff():
     google_added, google_deleted, _ = detect_changes(current_google_events, prev_google_events, 'google')
     xml_added, xml_deleted, _ = detect_changes(filtered_xml_events, prev_xml_events, 'xml')
     
-    print(f"\n📊 Change Detection:")
-    print(f"   Google: +{len(google_added)} -{len(google_deleted)}")
-    print(f"   XML: +{len(xml_added)} -{len(xml_deleted)}")
-    
     # Apply changes: XML additions → Google Calendar
     if xml_added:
-        print(f"\n📤 Adding {len(xml_added)} XML events to Google Calendar...")
+        print(f"\n📤 Ajout de {len(xml_added)} événements du calendrier local  au calendrier Google...")
         google_event_titles = {e.get('summary', ''): e for e in current_google_events}
         for event in xml_added:
             title = event['description']
@@ -168,13 +160,13 @@ def sync_calendar_with_diff():
                         'description': f"Synced from local XML - ID {event['id']}"
                     }
                     created = service.events().insert(calendarId=CALENDAR_ID, body=event_body).execute()
-                    print(f"✅ Added to Google: {created['summary']}")
+                    print(f"✅ Ajouté au calendrier Google: {created['summary']}")
                 except Exception as e:
-                    print(f"❌ Failed to add to Google: {title} - {e}")
+                    print(f"❌ Échec de l'ajout au calendrier Google: {title} - {e}")
     
     # Apply changes: Google additions → XML
     if google_added:
-        print(f"\n📥 Adding {len(google_added)} Google events to Local Calendar (XML format)...")
+        print(f"\n📥 Ajout de {len(google_added)} événements du calendrier Google au calendrier local...")
         xml_descriptions = {event['description'].strip() for event in current_xml_events}
         existing_ids = [int(event['id']) for event in current_xml_events if event['id'].isdigit()]
         next_id = max(existing_ids) + 1 if existing_ids else 1
@@ -202,7 +194,7 @@ def sync_calendar_with_diff():
                     'description': summary,
                     'reminder': False
                 })
-                print(f"✅ Added to Local Calendar (XML format): {summary}")
+                print(f"✅ Ajouté au calendrier local: {summary}")
                 next_id += 1
         
         if new_xml_events:
@@ -211,12 +203,12 @@ def sync_calendar_with_diff():
     
     # Handle deletions: XML deletions → Google Calendar
     if xml_deleted:
-        print(f"\n🗑️ Removing {len(xml_deleted)} events from Google Calendar...")
+        print(f"\n🗑️ Suppression de {len(xml_deleted)} événements du calendrier Google...")
         delete_google_events(service, xml_deleted)
     
     # Handle deletions: Google deletions → XML  
     if google_deleted:
-        print(f"\n🗑️ Removing {len(google_deleted)} events from XML...")
+        print(f"\n🗑️ Suppression de {len(google_deleted)} événements du calendrier local...")
         current_xml_events = delete_xml_events(current_xml_events, google_deleted, LOCAL_XML_PATH)
     
     # Refresh current states after all changes
@@ -230,55 +222,6 @@ def sync_calendar_with_diff():
     
     # Save snapshots for next sync
     save_snapshots(final_google_events, final_filtered_xml)
-
-# ============================================================================
-# DISPLAY FUNCTIONS
-# ============================================================================
-
-def filter_and_display_events():
-    """Filter and display events from past week to next month."""
-    print("🔍 Filtering events from past week to next month...")
-    service = get_google_calendar_service()
-    filtered_events = get_events_past_week_to_next_month(service, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE)
-    
-    if not filtered_events:
-        print("📭 No events found in the specified time range.")
-        return
-    
-    print(f"\n📅 Found {len(filtered_events)} events:")
-    print("-" * 80)
-    
-    for event in filtered_events:
-        summary = event.get('summary', 'No title')
-        start_time = event.get('start', {})
-        end_time = event.get('end', {})
-        
-        # Handle both dateTime and date fields
-        start_datetime = start_time.get('dateTime') or start_time.get('date')
-        end_datetime = end_time.get('dateTime') or end_time.get('date')
-        
-        # Format the datetime for display
-        if start_datetime:
-            try:
-                if 'T' in start_datetime:  # Full datetime
-                    start_dt = datetime.fromisoformat(start_datetime.replace('Z', '+00:00'))
-                    formatted_start = start_dt.strftime('%Y-%m-%d %H:%M')
-                else:  # Date only
-                    formatted_start = start_datetime
-            except:
-                formatted_start = start_datetime
-        else:
-            formatted_start = "Unknown time"
-        
-        print(f"🗓️  {summary}")
-        print(f"   📅 {formatted_start}")
-        
-        # Add description if available
-        description = event.get('description', '')
-        if description and len(description) < 100:
-            print(f"   📝 {description}")
-        
-        print()
 
 # ============================================================================
 # MAIN FUNCTION
@@ -324,7 +267,7 @@ class SyncLogDialog(QDialog):
     def sync_finished(self):
         """Signal that sync is finished, enable close button."""
         self.close_button.setEnabled(True)
-        self.append_text("<br><b>✅ Sync complete. You can now close this window.</b>")
+        self.append_text("<br><b>✅ Synchronisation terminée. Vous pouvez maintenant fermer cette fenêtre.</b>")
 
 
 class Signals(QObject):
