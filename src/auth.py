@@ -13,6 +13,7 @@ def get_google_calendar_service():
     """Get authenticated Google Calendar service."""
     creds = None
     TOKEN_PATH = os.path.join(appdirs.user_data_dir("CalendarSync", roaming=True))
+    print("token path: ", TOKEN_PATH)
     if os.path.exists(TOKEN_PATH):
         with open(TOKEN_PATH, 'rb') as token:
             creds = pickle.load(token)

@@ -312,8 +312,11 @@ if __name__ == '__main__':
         
         def run(self):
             # Ugly quick fix to get print statements into dialog
-            globals()["print"] = self.signals.log_text.emit 
-            main()
+            globals()["print"] = self.signals.log_text.emit
+            try:
+                main()
+            except Exception as ex:
+                print("Erreur: " + str(ex))
             self.signals.sync_finished.emit()
     
     # Run main in background thread
