@@ -56,7 +56,5 @@ def get_events_past_week_to_next_month(service, fetch_days_past=7, fetch_days_fu
     
     time_min = (now - timedelta(days=fetch_days_past)).isoformat()
     time_max = (now + timedelta(days=fetch_days_future)).isoformat()
-    
-    print(f"📅 Fetching events from {time_min[:10]} to {time_max[:10]}")
-    
+        
     return get_google_events(service, time_min=time_min, time_max=time_max) 

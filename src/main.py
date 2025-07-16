@@ -14,10 +14,8 @@ from PyQt5.QtCore import QObject, pyqtSignal, QThreadPool
 
 STYLE = """
 QWidget {
-   font-size: 20px;
-}
-QPushButton {
-   height: 70px;
+   font-size: 30px;
+   font-family: Helvetica, Arial;
 }
 """
 
@@ -268,10 +266,8 @@ class SyncLogDialog(QDialog):
     def append_text(self, text=None):
         """Append text to the text area."""
         self.text_area.append(text)
-        # Auto-scroll to bottom
-        cursor = self.text_area.textCursor()
-        cursor.movePosition(cursor.End)
-        self.text_area.setTextCursor(cursor)
+        # Auto-scroll to bottom using ensureCursorVisible
+        self.text_area.ensureCursorVisible()
     
     @QtCore.pyqtSlot()
     def sync_finished(self):
@@ -282,6 +278,7 @@ class SyncLogDialog(QDialog):
 
 class Signals(QObject):
     log_text = pyqtSignal(str)
+    sync_finished = pyqtSignal()
 
 if __name__ == '__main__':
     
@@ -296,12 +293,13 @@ if __name__ == '__main__':
             self.dialog = dialog
             self.signals = Signals()
             self.signals.log_text.connect(dialog.append_text)
+            self.signals.sync_finished.connect(dialog.sync_finished)
         
         def run(self):
             # Ugly quick fix to get print statements into dialog
             globals()["print"] = self.signals.log_text.emit 
             main()
-            self.dialog.sync_finished()
+            self.signals.sync_finished.emit()
     
     # Run main in background thread
     pool = QThreadPool.globalInstance()
