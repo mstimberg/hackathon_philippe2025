@@ -56,4 +56,4 @@ def write_appointments_to_xml(appointments, xml_path):
     
     # Write to file
     tree = etree.ElementTree(root)
-    tree.write(xml_path, encoding='utf-8', xml_declaration=True, pretty_print=True) 
+    tree.write(xml_path, encoding='utf-8', xml_declaration=True, pretty_print=False) 
