@@ -70,7 +70,14 @@ def sync_xml_to_google(service, local_events, google_events):
                     'dateTime': local_event['end'],
                     'timeZone': 'Europe/Paris',
                 },
-                'description': f"Synced from local XML - ID {local_event['id']}"
+                'description': f"Synced from local XML - ID {local_event['id']}",
+                # Add reminder if the local event has reminder set
+                'reminders': {
+                    'useDefault': False,
+                    'overrides': [
+                        {'method': 'popup', 'minutes': 10}
+                    ] if local_event.get('reminder', False) else []
+                }
             }
             created = service.events().insert(calendarId=CALENDAR_ID, body=event_body).execute()
             print(f"✅ Evénement créé: {created['summary']} à {created['start']['dateTime']}")
@@ -117,12 +124,18 @@ def sync_google_to_xml(google_events, local_events, xml_path):
         start_ticks = rfc3339_to_dotnet_ticks(start_datetime)
         end_ticks = rfc3339_to_dotnet_ticks(end_datetime)
         
+        # Check if Google event has any reminders
+        has_reminder = False
+        reminders = google_event.get('reminders', {})
+        if reminders.get('useDefault', False) or reminders.get('overrides', []):
+            has_reminder = True
+            
         new_appointments.append({
             'id': str(next_id),
             'start_ticks': start_ticks,
             'end_ticks': end_ticks,
             'description': summary,
-            'reminder': False  # Default to False for Google events
+            'reminder': has_reminder  # True if Google event has reminders
         })
         
         print(f"📅 Nouveau rendez-vous depuis Google: {summary}")
