@@ -143,7 +143,7 @@ def sync_calendar_with_diff():
     """Perform diff-based calendar synchronization that handles additions and deletions."""
     service = get_google_calendar_service()
     
-    current_xml_events = parse_local_xml(xml_path)
+    current_xml_events = parse_local_xml(XML_PATH)
     current_google_events = get_events_past_week_to_next_month(service, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE)
     
     # Filter XML events to same time range
