@@ -31,10 +31,12 @@ try:
     parser.read(os.path.join(config_dir, "config.ini"))
     FETCH_DAYS_FUTURE = int(parser["DEFAULT"]["FETCH_DAYS_FUTURE"])
     FETCH_DAYS_PAST = int(parser["DEFAULT"]["FETCH_DAYS_PAST"])
+    START_COMMUNICATOR = parser["DEFAULT"].get("START_COMMUNICATOR", "true").lower() == "true"
 except Exception as ex:
     print("Did not manage to parse config file: ", str(ex))
     FETCH_DAYS_FUTURE = 1
     FETCH_DAYS_PAST = 1
+    START_COMMUNICATOR = True
 
 # Load current states
 for path in XML_PATHS_COMMUNICATOR:
@@ -336,4 +338,6 @@ if __name__ == '__main__':
     pool = QThreadPool.globalInstance()
     pool.start(SyncRunner(dialog))
     
-    sys.exit(app.exec_())
+    app.exec_()
+    if START_COMMUNICATOR:
+        os.system(r'"C:\Program Files (x86)\Tobii Dynavox\Communicator 5\Communicator.exe"')
