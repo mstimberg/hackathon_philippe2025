@@ -3,6 +3,7 @@ import pickle
 from datetime import datetime, timezone, timedelta
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import appdirs
 
 # Configuration
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -11,8 +12,9 @@ CALENDAR_ID = 'primary'
 def get_google_calendar_service():
     """Get authenticated Google Calendar service."""
     creds = None
-    if os.path.exists('token.pkl'):
-        with open('token.pkl', 'rb') as token:
+    TOKEN_PATH = os.path.join(appdirs.user_data_dir("CalendarSync", roaming=True))
+    if os.path.exists(TOKEN_PATH):
+        with open(TOKEN_PATH, 'rb') as token:
             creds = pickle.load(token)
     if not creds:
         flow = InstalledAppFlow.from_client_secrets_file(
@@ -20,7 +22,7 @@ def get_google_calendar_service():
             SCOPES
         )
         creds = flow.run_local_server(port=0)
-        with open('token.pkl', 'wb') as token:
+        with open(TOKEN_PATH, 'wb') as token:
             pickle.dump(creds, token)
     return build('calendar', 'v3', credentials=creds)
 
