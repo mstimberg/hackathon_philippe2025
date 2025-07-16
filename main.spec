@@ -23,7 +23,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='pauses',
+    name='calendar_sync',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
