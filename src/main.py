@@ -36,6 +36,15 @@ except Exception as ex:
     FETCH_DAYS_FUTURE = 1
     FETCH_DAYS_PAST = 1
 
+# Load current states
+for path in XML_PATHS_COMMUNICATOR:
+    if os.path.exists(path):
+        XML_PATH = path
+        break
+else:
+    print("Using local test file")
+    XML_PATH = LOCAL_XML_PATH
+
 # ============================================================================
 # SYNC LOGIC - SIMPLE SYNC (ADDITIONS ONLY)
 # ============================================================================
@@ -134,14 +143,6 @@ def sync_calendar_with_diff():
     """Perform diff-based calendar synchronization that handles additions and deletions."""
     service = get_google_calendar_service()
     
-    # Load current states
-    for path in XML_PATHS_COMMUNICATOR:
-        if os.path.exists(path):
-            xml_path = path
-            break
-    else:
-        print("Using local test file")
-        xml_path = LOCAL_XML_PATH
     current_xml_events = parse_local_xml(xml_path)
     current_google_events = get_events_past_week_to_next_month(service, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE)
     
@@ -216,22 +217,26 @@ def sync_calendar_with_diff():
                 next_id += 1
         
         if new_xml_events:
-            write_appointments_to_xml(current_xml_events + new_xml_events, LOCAL_XML_PATH)
+            write_appointments_to_xml(current_xml_events + new_xml_events, XML_PATH)
             current_xml_events.extend(new_xml_events)
     
     # Handle deletions: XML deletions → Google Calendar
     if xml_deleted:
         print(f"\n🗑️ Suppression de {len(xml_deleted)} événements du calendrier Google...")
+        for event in xml_deleted:
+            print(f"Suppression de l'événement {event['summary']} du calendrier Google")
         delete_google_events(service, xml_deleted)
     
     # Handle deletions: Google deletions → XML  
     if google_deleted:
         print(f"\n🗑️ Suppression de {len(google_deleted)} événements du calendrier local...")
-        current_xml_events = delete_xml_events(current_xml_events, google_deleted, LOCAL_XML_PATH)
+        for event in google_deleted:
+            print(f"Suppression de l'événement {event['summary']} du calendrier local")
+        current_xml_events = delete_xml_events(current_xml_events, google_deleted, XML_PATH)
     
     # Refresh current states after all changes
     final_google_events = get_events_past_week_to_next_month(service, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE)
-    final_xml_events = parse_local_xml(LOCAL_XML_PATH)
+    final_xml_events = parse_local_xml(XML_PATH)
     
     # Filter XML events again for snapshot
     final_filtered_xml = filter_events_by_time_range(
