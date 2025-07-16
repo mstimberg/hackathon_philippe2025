@@ -18,6 +18,9 @@ QWidget {
    font-size: 30px;
    font-family: Helvetica, Arial;
 }
+QPushButton {
+    height: 50px;
+}
 """
 
 # Configuration
