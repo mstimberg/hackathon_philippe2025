@@ -179,7 +179,7 @@ def sync_calendar_with_diff():
                         'description': f"Synced from local XML - ID {event['id']}"
                     }
                     created = service.events().insert(calendarId=CALENDAR_ID, body=event_body).execute()
-                    print(f"✅ Ajouté au calendrier Google: {created['summary']}")
+                    print(f"✅ Ajouté au calendrier Google: {created.get('summary', '')}")
                 except Exception as e:
                     print(f"❌ Échec de l'ajout au calendrier Google: {title} - {e}")
     
@@ -224,14 +224,14 @@ def sync_calendar_with_diff():
     if xml_deleted:
         print(f"\n🗑️ Suppression de {len(xml_deleted)} événements du calendrier Google...")
         for event in xml_deleted:
-            print(f"Suppression de l'événement {event['summary']} du calendrier Google")
+            print(f"Suppression de l'événement {event.get('summary', '')} du calendrier Google")
         delete_google_events(service, xml_deleted)
     
     # Handle deletions: Google deletions → XML  
     if google_deleted:
         print(f"\n🗑️ Suppression de {len(google_deleted)} événements du calendrier local...")
         for event in google_deleted:
-            print(f"Suppression de l'événement {event['summary']} du calendrier local")
+            print(f"Suppression de l'événement {event.get('summary', '')} du calendrier local")
         current_xml_events = delete_xml_events(current_xml_events, google_deleted, XML_PATH)
     
     # Refresh current states after all changes

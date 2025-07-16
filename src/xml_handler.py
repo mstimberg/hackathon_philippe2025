@@ -56,4 +56,9 @@ def write_appointments_to_xml(appointments, xml_path):
     
     # Write to file
     tree = etree.ElementTree(root)
-    tree.write(xml_path, encoding='utf-8', xml_declaration=True, pretty_print=False) 
+    tree.write(xml_path, encoding='utf-8', xml_declaration=True, pretty_print=False)
+    # Remove all line breaks in file
+    with open(xml_path, 'rt', encoding='utf-8') as f:
+        content = f.read()
+    with open(xml_path, 'wt', encoding='utf-8') as f:
+        f.write(content.replace('\n', ''))
