@@ -40,6 +40,13 @@ except Exception as ex:
     FETCH_DAYS_FUTURE = 1
     FETCH_DAYS_PAST = 1
     START_COMMUNICATOR = True
+    parser = configparser.ConfigParser()
+    parser["DEFAULT"] = {"FETCH_DAYS_FUTURE": str(FETCH_DAYS_FUTURE),
+                         "FETCH_DAYS_PAST": str(FETCH_DAYS_PAST),
+                         "START_COMMUNICATOR": str(START_COMMUNICATOR)}
+    print("Creating config file")
+    with open(os.path.join(config_dir, "config.ini"), "w") as f:
+        parser.write(f)
 
 # Load current states
 for path in XML_PATHS_COMMUNICATOR:
