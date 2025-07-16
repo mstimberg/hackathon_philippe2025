@@ -11,7 +11,8 @@ from PyQt5 import QtCore
 import sys, os
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtCore import QObject, pyqtSignal, QThreadPool
-
+from appdirs import user_config_dir
+import configparser
 STYLE = """
 QWidget {
    font-size: 30px;
@@ -23,8 +24,17 @@ QWidget {
 LOCAL_XML_PATH = 'Appointments.xml'
 XML_PATHS_COMMUNICATOR = [r'C:\Users\phili\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe prédiction\Settings\Calendar\Appointments.xml',
                           r'C:\Users\Philippe\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe\Settings\Calendar\Appointments.xml']
-FETCH_DAYS_FUTURE = 30
-FETCH_DAYS_PAST = 7
+config_dir = user_config_dir("CalendarSync", roaming=True)
+try:
+    print("reading config from", os.path.join(config_dir, "config.ini"))
+    parser = configparser.ConfigParser()
+    parser.read(os.path.join(config_dir, "config.ini"))
+    FETCH_DAYS_FUTURE = int(parser["DEFAULT"]["FETCH_DAYS_FUTURE"])
+    FETCH_DAYS_PAST = int(parser["DEFAULT"]["FETCH_DAYS_PAST"])
+except Exception as ex:
+    print("Did not manage to parse config file: ", str(ex))
+    FETCH_DAYS_FUTURE = 1
+    FETCH_DAYS_PAST = 1
 
 # ============================================================================
 # SYNC LOGIC - SIMPLE SYNC (ADDITIONS ONLY)
