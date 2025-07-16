@@ -8,20 +8,23 @@ from event_manager import detect_changes, delete_google_events, delete_xml_event
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt, QRunnable
 from PyQt5 import QtCore
-import sys
+import sys, os
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtCore import QObject, pyqtSignal, QThreadPool
 
 STYLE = """
 QWidget {
-   font-size: 30px;
-   font-family: "Noto Sans", Arial, Helvetica, sans-serif;
+   font-size: 20px;
+}
+QPushButton {
+   height: 70px;
 }
 """
 
 # Configuration
 LOCAL_XML_PATH = 'Appointments.xml'
-#LOCAL_XML_PATH_COMMUNICATOR = r'C:\Users\phili\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe prédiction\Settings\Calendar'
+XML_PATHS_COMMUNICATOR = [r'C:\Users\phili\AppData\Roaming\Tobii Dynavox\Communicator\5\Users\Philippe prédiction\Settings\Calendar\Appointments.xml',
+                          r'C:\Users\Philippe\Documents\Communicator 5\Philippe\Users\My Text Files\Settings\Calendar\Appointments.xml']
 FETCH_DAYS_FUTURE = 30
 FETCH_DAYS_PAST = 7
 
@@ -124,7 +127,14 @@ def sync_calendar_with_diff():
     service = get_google_calendar_service()
     
     # Load current states
-    current_xml_events = parse_local_xml(LOCAL_XML_PATH)
+    for path in XML_PATHS_COMMUNICATOR:
+        if os.path.exists(path):
+            xml_path = path
+            break
+    else:
+        print("Using local test file")
+        xml_path = LOCAL_XML_PATH
+    current_xml_events = parse_local_xml(xml_path)
     current_google_events = get_events_past_week_to_next_month(service, FETCH_DAYS_PAST, FETCH_DAYS_FUTURE)
     
     # Filter XML events to same time range
