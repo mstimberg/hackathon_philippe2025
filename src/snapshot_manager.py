@@ -1,8 +1,9 @@
 import os
 import json
+import appdirs
 
 # Snapshot files to track previous states
-SNAPSHOT_DIR = 'calendar_snapshots'
+SNAPSHOT_DIR = os.path.join(appdirs.user_data_dir('CalendarSync', roaming=True),'calendar_snapshots')
 GOOGLE_SNAPSHOT_FILE = os.path.join(SNAPSHOT_DIR, 'google_events.json')
 XML_SNAPSHOT_FILE = os.path.join(SNAPSHOT_DIR, 'xml_events.json')
 
